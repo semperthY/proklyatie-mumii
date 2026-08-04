@@ -1,5 +1,6 @@
 package com.example.proklyatiemumii
 
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,12 +10,16 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -33,7 +38,7 @@ data class ArtifactDef(
     val type: String, val value: Double, val baseCost: Long
 )
 
-data class SkillDef(val emoji: String, val name: String, val cost: Int, val duration: Long)
+data class SkillDef(val emoji: String, val name: String, val desc: String, val cost: Int, val duration: Long)
 data class PerkDef(val emoji: String, val name: String, val desc: String)
 
 class MainActivity : AppCompatActivity() {
@@ -41,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvHeadCoins: TextView
     private lateinit var tvHeadClicks: TextView
     private lateinit var tvHeadArts: TextView
+    private lateinit var btnSettings: TextView
     private lateinit var btnRebirth: TextView
     private lateinit var tvStats: TextView
     private lateinit var tvLog: TextView
@@ -54,7 +60,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutArtifacts: LinearLayout
     private lateinit var particleView: ParticleView
     private lateinit var parallax: ParallaxView
-    private lateinit var btnMute: ImageView
+    private lateinit var layoutSettings: LinearLayout
+    private lateinit var cbSound: CheckBox
+    private lateinit var cbVibration: CheckBox
     private lateinit var layoutRebirth: LinearLayout
     private lateinit var tvRebirthText: TextView
     private val skillViews = mutableListOf<TextView>()
@@ -62,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private val sound = SoundManager(this)
     private var effectsEnabled = true
     private var muted = false
+    private var vibrationEnabled = true
 
     private var coins = 0L
     private var tapLevel = 0
@@ -109,12 +118,12 @@ class MainActivity : AppCompatActivity() {
 
     private val skillKeys = arrayOf("autoclick", "find", "gold", "shield", "crit", "")
     private val skills = listOf(
-        SkillDef("⚡", "Автоклик 30с", 50, 30000),
-        SkillDef("🏺", "Поиск артов x3, 15с", 40, 15000),
-        SkillDef("💰", "Монеты x2, 20с", 40, 20000),
-        SkillDef("🛡️", "Щит: без неудач 20с", 60, 20000),
-        SkillDef("⚔️", "Всегда крит 15с", 60, 15000),
-        SkillDef("✨", "Сейчас 150 тапов", 30, 0)
+        SkillDef("⚡", "Автоклик", "Автоматически кликает по мумии 10 раз/сек в течение 30 сек", 50, 30000),
+        SkillDef("🏺", "Поиск артефактов", "Шанс найти артефакт x3 в течение 15 сек", 40, 15000),
+        SkillDef("💰", "Золотая лихорадка", "Удваивает получение монет на 20 сек", 40, 20000),
+        SkillDef("🛡️", "Щит Анубиса", "Защищает от неудач на 20 сек", 60, 20000),
+        SkillDef("⚔️", "Ярость фараона", "Каждый тап становится критом на 15 сек", 60, 15000),
+        SkillDef("✨", "Благословение", "Мгновенно делает 150 тапов с текущей силой", 30, 0)
     )
 
     private val perkDefs = listOf(
@@ -175,7 +184,7 @@ class MainActivity : AppCompatActivity() {
         override fun run() {
             if (eff("autoclick")) {
                 doTap(true)
-                handler.postDelayed(this, 500L)
+                handler.postDelayed(this, 100L)
             } else {
                 autoLoopRunning = false
             }
@@ -198,6 +207,7 @@ class MainActivity : AppCompatActivity() {
         tvHeadCoins = findViewById(R.id.tvHeadCoins)
         tvHeadClicks = findViewById(R.id.tvHeadClicks)
         tvHeadArts = findViewById(R.id.tvHeadArts)
+        btnSettings = findViewById(R.id.btnSettings)
         btnRebirth = findViewById(R.id.btnRebirth)
         tvStats = findViewById(R.id.tvStats)
         tvLog = findViewById(R.id.tvLog)
@@ -211,7 +221,9 @@ class MainActivity : AppCompatActivity() {
         layoutArtifacts = findViewById(R.id.layoutArtifacts)
         particleView = findViewById(R.id.particleView)
         parallax = findViewById(R.id.parallax)
-        btnMute = findViewById(R.id.btnMute)
+        layoutSettings = findViewById(R.id.layoutSettings)
+        cbSound = findViewById(R.id.cbSound)
+        cbVibration = findViewById(R.id.cbVibration)
         layoutRebirth = findViewById(R.id.layoutRebirth)
         tvRebirthText = findViewById(R.id.tvRebirthText)
 
@@ -219,16 +231,42 @@ class MainActivity : AppCompatActivity() {
             skillViews.add(findViewById(id))
         }
 
-        muted = prefs.getBoolean("muted", false)
+        muted = !prefs.getBoolean("sound", true)
+        vibrationEnabled = prefs.getBoolean("vibration", true)
         sound.muted = muted
-        updateMuteIcon()
         sound.init()
 
-        btnMute.setOnClickListener {
-            muted = !muted
+        cbSound.isChecked = !muted
+        cbVibration.isChecked = vibrationEnabled
+
+        cbSound.setOnCheckedChangeListener { _, on ->
+            muted = !on
             sound.muted = muted
-            prefs.edit().putBoolean("muted", muted).apply()
-            updateMuteIcon()
+            prefs.edit().putBoolean("sound", on).apply()
+        }
+
+        cbVibration.setOnCheckedChangeListener { _, on ->
+            vibrationEnabled = on
+            prefs.edit().putBoolean("vibration", on).apply()
+        }
+
+        findViewById<Button>(R.id.btnReset).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Сбросить прогресс?")
+                .setMessage("Все монеты, уровни, артефакты и перки будут потеряны. Ты уверен?")
+                .setPositiveButton("ДА, СБРОСИТЬ") { _, _ -> resetAll() }
+                .setNegativeButton("Отмена", null)
+                .show()
+        }
+
+        findViewById<Button>(R.id.btnSettingsClose).setOnClickListener {
+            layoutSettings.visibility = View.GONE
+        }
+
+        btnSettings.setOnClickListener {
+            cbSound.isChecked = !muted
+            cbVibration.isChecked = vibrationEnabled
+            layoutSettings.visibility = View.VISIBLE
         }
 
         btnRebirth.setOnClickListener { showRebirth() }
@@ -237,6 +275,16 @@ class MainActivity : AppCompatActivity() {
 
         skillViews.forEachIndexed { i, v ->
             v.setOnClickListener { castSkill(i) }
+            v.setOnLongClickListener {
+                val s = skills[i]
+                AlertDialog.Builder(this)
+                    .setTitle("${s.emoji} ${s.name}")
+                    .setMessage("${s.desc}\n\nЦена: ${s.cost} маны" +
+                            if (s.duration > 0) "\nДлительность: ${s.duration / 1000} сек" else "")
+                    .setPositiveButton("ОК", null)
+                    .show()
+                true
+            }
         }
 
         val filter = IntentFilter().apply {
@@ -294,6 +342,14 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (layoutSettings.visibility == View.VISIBLE) {
+            layoutSettings.visibility = View.GONE
+            return
+        }
+        if (layoutRebirth.visibility == View.VISIBLE) {
+            layoutRebirth.visibility = View.GONE
+            return
+        }
         saveProgress()
         val intent = Intent(this, ExitActivity::class.java)
         intent.putExtra("coins", coins)
@@ -306,11 +362,25 @@ class MainActivity : AppCompatActivity() {
     private fun setupClicks() {
         ivMummy.setOnClickListener { view ->
             doTap(false)
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            if (vibrationEnabled) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
         btnUpgradeTap.setOnClickListener { buyTapUpgrade() }
         btnUpgradeAuto.setOnClickListener { buyAutoUpgrade() }
         btnUpgradeLuck.setOnClickListener { buyLuckUpgrade() }
+    }
+
+    private fun vibrate(ms: Long) {
+        if (!vibrationEnabled) return
+        try {
+            val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            val v = vm?.defaultVibrator ?: return
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                v.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(ms)
+            }
+        } catch (_: Exception) {}
     }
 
     private fun eff(key: String): Boolean {
@@ -337,6 +407,7 @@ class MainActivity : AppCompatActivity() {
         if (isBad) {
             val penalty = calculatePenalty()
             sound.play("bad")
+            vibrate(80)
             burstAtMummy(Color.parseColor("#FF5252"), 10)
             if (penalty > 0) {
                 coins = max(0L, coins - penalty)
@@ -362,6 +433,7 @@ class MainActivity : AppCompatActivity() {
             coins += gain
 
             sound.play(if (isCrit) "crit" else "tap", if (isCrit) 0.6f else 0.3f)
+            if (isCrit) vibrate(40)
             burstAtMummy(Color.parseColor("#FFD54F"), if (isCrit) 16 else 6)
             spawnFloatingText("+" + format(gain), if (isCrit) "#FFEB3B" else "#FFD54F")
 
@@ -373,6 +445,7 @@ class MainActivity : AppCompatActivity() {
 
             if (foundArtifact != null) {
                 sound.play("artifact")
+                vibrate(60)
                 spawnFloatingText("🏺 АРТЕФАКТ!", "#FFAB40")
                 tvLog.text = tvLog.text.toString() + "\n🏺 Найден артефакт: ${artifacts[foundArtifact].name}!"
             }
@@ -395,6 +468,7 @@ class MainActivity : AppCompatActivity() {
         }
         mana -= s.cost
         sound.play("artifact")
+        vibrate(50)
         when (i) {
             0 -> { setEff("autoclick", s.duration); startAutoLoop() }
             1 -> setEff("find", s.duration)
@@ -443,6 +517,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyPickup(idx: Int) {
         sound.play("coin")
+        vibrate(30)
         when (idx) {
             0 -> { effectUntil["autoclick"] = System.currentTimeMillis() + 10000; startAutoLoop() }
             1 -> effectUntil["gold"] = System.currentTimeMillis() + 15000
@@ -594,6 +669,17 @@ class MainActivity : AppCompatActivity() {
         saveProgress(); updateUi(); updateArtifactsTable()
     }
 
+    private fun resetAll() {
+        coins = 0; tapLevel = 0; autoLevel = 0; luckLevel = 0
+        totalClicks = 0; rebirths = 0; mana = 0.0
+        perks.clear()
+        artifactsCollected.clear(); artifactsOwned.clear(); artifactLevels.clear()
+        effectUntil.clear(); rebirthOffered = false
+        saveProgress(); updateUi(); updateArtifactsTable()
+        layoutSettings.visibility = View.GONE
+        tvLog.text = "Всё сброшено. Начинаем заново!"
+    }
+
     private fun tapCost(): Long = (25.0 * 1.6.pow(tapLevel.toDouble())).toLong()
     private fun autoCost(): Long = (50.0 * 1.7.pow(autoLevel.toDouble())).toLong()
     private fun luckCost(): Long = (100.0 * 2.0.pow(luckLevel.toDouble())).toLong()
@@ -667,9 +753,20 @@ class MainActivity : AppCompatActivity() {
             val s = skills[i]
             val active = skillKeys[i].isNotEmpty() && eff(skillKeys[i])
             v.text = s.emoji
-            v.setBackgroundResource(if (active) R.drawable.btn_gold else R.drawable.bg_panel)
+            if (active) {
+                val secs = ((effectUntil[skillKeys[i]] ?: 0) - System.currentTimeMillis()) / 1000
+                v.setBackgroundResource(R.drawable.bg_panel)
+                v.setTextColor(Color.parseColor("#FFEB3B"))
+                v.text = "${s.emoji}\n${secs}"
+                v.setTextSize(12f)
+            } else {
+                v.setBackgroundResource(R.drawable.bg_panel)
+                v.setTextColor(Color.parseColor("#FFD54F"))
+                v.text = s.emoji
+                v.setTextSize(20f)
+            }
             v.isEnabled = !active && mana >= s.cost
-            v.contentDescription = "${s.name}, цена ${s.cost} маны"
+            v.contentDescription = "${s.name}: ${s.desc}. Цена ${s.cost} маны"
         }
     }
 
@@ -696,10 +793,6 @@ class MainActivity : AppCompatActivity() {
             ivMummy.clearAnimation()
             tvLog.text = "🔋 Низкий заряд: эффекты выключены для экономии батареи"
         }
-    }
-
-    private fun updateMuteIcon() {
-        btnMute.setImageResource(if (muted) R.drawable.ic_sound_off else R.drawable.ic_sound_on)
     }
 
     private fun burstAtMummy(color: Int, count: Int) {
@@ -846,6 +939,8 @@ class MainActivity : AppCompatActivity() {
             .putLong("totalClicks", totalClicks)
             .putInt("rebirths", rebirths)
             .putInt("mana", mana.toInt())
+            .putBoolean("sound", !muted)
+            .putBoolean("vibration", vibrationEnabled)
             .putString("perks", perks.joinToString(","))
             .putString("artifactsCollected", artifactsCollected.joinToString(","))
             .putString("artifactsOwned", artifactsOwned.joinToString(","))
