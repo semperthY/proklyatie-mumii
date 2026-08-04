@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/ivMenuMummy"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:src="@drawable/sprite_mummy"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Мумия" />
+
+        <TextView
+            android:id="@+id/tvMenuTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ПРОКЛЯТИЕ МУМИИ"
+            android:textColor="#FFD54F"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:shadowColor="#80000000"
+            android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4"
+            android:layout_marginBottom="32dp" />
+
+        <Button
+            android:id="@+id/btnPlay"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:minHeight="64dp"
+            android:text="▶ ИГРАТЬ"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#3E2B00"
+            android:background="@drawable/btn_gold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="v1.2 • звуки, частицы, параллакс"
+            android:textColor="#78909C"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</FrameLayout>

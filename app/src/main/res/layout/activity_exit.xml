@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:src="@drawable/sprite_mummy"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Мумия" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Покинуть гробницу?"
+            android:textColor="#FFD54F"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvExitStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel"
+            android:padding="16dp"
+            android:gravity="center"
+            android:textColor="#FFCC80"
+            android:textSize="15sp"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnContinue"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="ПРОДОЛЖИТЬ ИГРАТЬ"
+            android:textStyle="bold"
+            android:textColor="#3E2B00"
+            android:background="@drawable/btn_gold"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnExit"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="ВЫЙТИ"
+            android:textStyle="bold"
+            android:textColor="#FFCC80"
+            android:background="@drawable/btn_dark" />
+
+    </LinearLayout>
+</FrameLayout>

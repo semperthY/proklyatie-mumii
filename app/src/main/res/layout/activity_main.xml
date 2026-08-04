@@ -1,126 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#1B120B"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <com.example.proklyatiemumii.ParallaxView
+        android:id="@+id/parallax"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:padding="20dp">
+        android:layout_height="match_parent" />
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="ПРОКЛЯТИЕ МУМИИ"
-            android:textColor="#FFD54F"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:id="@+id/tvCoins"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Монеты: 0"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/tvStats"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text=""
-            android:textColor="#B0BEC5"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <Button
-            android:id="@+id/btnTap"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="130dp"
-            android:text="🧟 ТАПНИ МУМИЮ"
-            android:textSize="24sp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:id="@+id/tvLog"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:minHeight="72dp"
-            android:text=""
-            android:textColor="#FFCC80"
-            android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="УЛУЧШЕНИЯ"
-            android:textColor="#FFD54F"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="8dp" />
-
-        <Button
-            android:id="@+id/btnUpgradeTap"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Улучшить тап" />
-
-        <Button
-            android:id="@+id/btnUpgradeAuto"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Нанять кота" />
-
-        <Button
-            android:id="@+id/btnUpgradeLuck"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Амулет удачи" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🏺 АРТЕФАКТЫ"
-            android:textColor="#FFD54F"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/tvArtifactStats"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text=""
-            android:textColor="#B0BEC5"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/layoutArtifacts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="20dp">
 
-    </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ПРОКЛЯТИЕ МУМИИ"
+                android:textColor="#FFD54F"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:shadowColor="#80000000"
+                android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4"
+                android:layout_marginBottom="12dp" />
 
-</ScrollView>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <ImageView
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:src="@drawable/sprite_coin"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="Монеты" />
+
+                <TextView
+                    android:id="@+id/tvCoins"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
+
+            <FrameLayout
+                android:id="@+id/flMummy"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginBottom="8dp">
+
+                <ImageView
+                    android:id="@+id/ivMummy"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/sprite_mummy"
+                    android:contentDescription="Мумия" />
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_panel"
+                android:gravity="center"
+                android:minHeight="64dp"
+                android:padding="12dp"
+                android:textColor="#FFCC80"
+                android:textSize="15sp"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="УЛУЧШЕНИЯ"
+                android:textColor="#FFD54F"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnUpgradeTap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:background="@drawable/btn_gold"
+                android:textColor="#3E2B00"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:text="Улучшить тап" />
+
+            <Button
+                android:id="@+id/btnUpgradeAuto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:background="@drawable/btn_gold"
+                android:textColor="#3E2B00"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:text="Нанять кота" />
+
+            <Button
+                android:id="@+id/btnUpgradeLuck"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:background="@drawable/btn_gold"
+                android:textColor="#3E2B00"
+                android:textStyle="bold"
+                android:text="Амулет удачи" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏺 АРТЕФАКТЫ"
+                android:textColor="#FFD54F"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvArtifactStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutArtifacts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <com.example.proklyatiemumii.ParticleView
+        android:id="@+id/particleView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageView
+        android:id="@+id/btnMute"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_sound_on"
+        android:contentDescription="Звук" />
+
+</FrameLayout>

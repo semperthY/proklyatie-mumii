@@ -1,5 +1,9 @@
 package com.example.proklyatiemumii
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -7,7 +11,11 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
+import android.view.animation.AnimationUtils
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -31,12 +39,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCoins: TextView
     private lateinit var tvStats: TextView
     private lateinit var tvLog: TextView
-    private lateinit var btnTap: Button
+    private lateinit var ivMummy: ImageView
+    private lateinit var flMummy: FrameLayout
     private lateinit var btnUpgradeTap: Button
     private lateinit var btnUpgradeAuto: Button
     private lateinit var btnUpgradeLuck: Button
     private lateinit var tvArtifactStats: TextView
     private lateinit var layoutArtifacts: LinearLayout
+    private lateinit var particleView: ParticleView
+    private lateinit var parallax: ParallaxView
+    private lateinit var btnMute: ImageView
+
+    private val sound = SoundManager(this)
+    private var effectsEnabled = true
+    private var muted = false
 
     private var coins = 0L
     private var tapLevel = 0
@@ -52,6 +68,15 @@ class MainActivity : AppCompatActivity() {
 
     private val prefs by lazy {
         getSharedPreferences("proklyatie_mumii_save", MODE_PRIVATE)
+    }
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_BATTERY_LOW -> setEffects(false)
+                Intent.ACTION_BATTERY_OKAY -> setEffects(true)
+            }
+        }
     }
 
     private val artifacts = listOf(
@@ -108,12 +133,34 @@ class MainActivity : AppCompatActivity() {
         tvCoins = findViewById(R.id.tvCoins)
         tvStats = findViewById(R.id.tvStats)
         tvLog = findViewById(R.id.tvLog)
-        btnTap = findViewById(R.id.btnTap)
+        ivMummy = findViewById(R.id.ivMummy)
+        flMummy = findViewById(R.id.flMummy)
         btnUpgradeTap = findViewById(R.id.btnUpgradeTap)
         btnUpgradeAuto = findViewById(R.id.btnUpgradeAuto)
         btnUpgradeLuck = findViewById(R.id.btnUpgradeLuck)
         tvArtifactStats = findViewById(R.id.tvArtifactStats)
         layoutArtifacts = findViewById(R.id.layoutArtifacts)
+        particleView = findViewById(R.id.particleView)
+        parallax = findViewById(R.id.parallax)
+        btnMute = findViewById(R.id.btnMute)
+
+        muted = prefs.getBoolean("muted", false)
+        sound.muted = muted
+        updateMuteIcon()
+        sound.init()
+
+        btnMute.setOnClickListener {
+            muted = !muted
+            sound.muted = muted
+            prefs.edit().putBoolean("muted", muted).apply()
+            updateMuteIcon()
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_BATTERY_LOW)
+            addAction(Intent.ACTION_BATTERY_OKAY)
+        }
+        registerReceiver(batteryReceiver, filter)
 
         loadProgress()
         setupClicks()
@@ -127,10 +174,14 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         handler.removeCallbacks(autoTick)
         handler.post(autoTick)
+        if (effectsEnabled) {
+            ivMummy.startAnimation(AnimationUtils.loadAnimation(this, R.anim.wobble))
+        }
     }
 
     override fun onPause() {
         handler.removeCallbacks(autoTick)
+        ivMummy.clearAnimation()
         saveProgress()
         super.onPause()
     }
@@ -140,8 +191,32 @@ class MainActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
+        sound.release()
+        try { unregisterReceiver(batteryReceiver) } catch (_: Exception) {}
+        super.onDestroy()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val w = parallax.width
+        if (w > 0) parallax.setShift((ev.x / w) * 2f - 1f)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        saveProgress()
+        val intent = Intent(this, ExitActivity::class.java)
+        intent.putExtra("coins", coins)
+        intent.putExtra("found", artifactsCollected.size)
+        intent.putExtra("owned", artifactsOwned.size)
+        startActivity(intent)
+        overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+    }
+
     private fun setupClicks() {
-        btnTap.setOnClickListener { view ->
+        ivMummy.setOnClickListener { view ->
             onMummyTap()
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
@@ -152,14 +227,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onMummyTap() {
-        animateTap()
+        mummySquash()
 
         val foundArtifact = tryFindArtifact()
 
         if (random.nextDouble() < badChance()) {
             val penalty = calculatePenalty()
+            sound.play("bad")
+            burstAtMummy(Color.parseColor("#FF5252"), 10)
             if (penalty > 0) {
                 coins = max(0L, coins - penalty)
+                spawnFloatingText("-" + format(penalty), "#FF5252")
                 val lostId = loseRandomArtifact()
                 val baseMsg = badMessages[random.nextInt(badMessages.size)].format(format(penalty))
                 tvLog.text = if (lostId != null) {
@@ -179,6 +257,10 @@ class MainActivity : AppCompatActivity() {
 
             coins += gain
 
+            sound.play(if (isCrit) "crit" else "tap", if (isCrit) 0.6f else 0.3f)
+            burstAtMummy(Color.parseColor("#FFD54F"), if (isCrit) 16 else 6)
+            spawnFloatingText("+" + format(gain), if (isCrit) "#FFEB3B" else "#FFD54F")
+
             tvLog.text = if (isCrit) {
                 critMessages[random.nextInt(critMessages.size)].format(format(gain))
             } else {
@@ -186,6 +268,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (foundArtifact != null) {
+                sound.play("artifact")
+                spawnFloatingText("🏺 АРТЕФАКТ!", "#FFAB40")
                 tvLog.text = tvLog.text.toString() + "\n🏺 Найден артефакт: ${artifacts[foundArtifact].name}!"
             }
         }
@@ -257,6 +341,7 @@ class MainActivity : AppCompatActivity() {
         if (coins >= cost) {
             coins -= cost
             tapLevel++
+            sound.play("coin")
             tvLog.text = "Бинты укреплены! Теперь тап сильнее."
         } else {
             tvLog.text = "Не хватает монет на улучшение тапа."
@@ -270,6 +355,7 @@ class MainActivity : AppCompatActivity() {
         if (coins >= cost) {
             coins -= cost
             autoLevel++
+            sound.play("coin")
             tvLog.text = "Проклятый кот нанят! Монеты капают каждую секунду."
         } else {
             tvLog.text = "Не хватает монет на кота."
@@ -283,6 +369,7 @@ class MainActivity : AppCompatActivity() {
         if (coins >= cost) {
             coins -= cost
             luckLevel++
+            sound.play("coin")
             tvLog.text = "Амулет удачи сияет! Мумия стала чуть менее проклятой."
         } else {
             tvLog.text = "Не хватает монет на амулет."
@@ -297,6 +384,7 @@ class MainActivity : AppCompatActivity() {
         if (coins >= cost) {
             coins -= cost
             artifactLevels[id] = (artifactLevels[id] ?: 0) + 1
+            sound.play("artifact")
             tvLog.text = "✨ Артефакт ${artifacts[id].name} улучшен до ур. ${artifactLevels[id]}!"
         } else {
             tvLog.text = "Не хватает монет на улучшение артефакта."
@@ -337,7 +425,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUi() {
-        tvCoins.text = "Монеты: ${format(coins)}"
+        tvCoins.text = format(coins)
 
         val comboPercent = artifactsOwned.size * 10
         val penaltyBonus = artifactsOwned.size * 5
@@ -354,13 +442,74 @@ class MainActivity : AppCompatActivity() {
         val autoCost = autoCost()
         val luckCost = luckCost()
 
-        btnUpgradeTap.text = "Улучшить тап\nУр. $tapLevel | Цена: ${format(tapCost)}"
-        btnUpgradeAuto.text = "Нанять кота\nУр. $autoLevel | Цена: ${format(autoCost)}"
-        btnUpgradeLuck.text = "Амулет удачи\nУр. $luckLevel | Цена: ${format(luckCost)}"
+        btnUpgradeTap.text = " Улучшить тап (ур. $tapLevel) — ${format(tapCost)}"
+        btnUpgradeAuto.text = "🐈⬛ Нанять кота (ур. $autoLevel) — ${format(autoCost)}"
+        btnUpgradeLuck.text = "🏺 Амулет удачи (ур. $luckLevel) — ${format(luckCost)}"
 
         btnUpgradeTap.isEnabled = coins >= tapCost
         btnUpgradeAuto.isEnabled = coins >= autoCost
         btnUpgradeLuck.isEnabled = coins >= luckCost
+    }
+
+    private fun setEffects(on: Boolean) {
+        effectsEnabled = on
+        particleView.setEnabledEffects(on)
+        if (on) {
+            ivMummy.startAnimation(AnimationUtils.loadAnimation(this, R.anim.wobble))
+        } else {
+            ivMummy.clearAnimation()
+            tvLog.text = "🔋 Низкий заряд: эффекты выключены для экономии батареи"
+        }
+    }
+
+    private fun updateMuteIcon() {
+        btnMute.setImageResource(if (muted) R.drawable.ic_sound_off else R.drawable.ic_sound_on)
+    }
+
+    private fun burstAtMummy(color: Int, count: Int) {
+        if (!effectsEnabled) return
+        val a = IntArray(2)
+        val b = IntArray(2)
+        ivMummy.getLocationOnScreen(a)
+        particleView.getLocationOnScreen(b)
+        val cx = a[0] + ivMummy.width / 2f - b[0]
+        val cy = a[1] + ivMummy.height / 2f - b[1]
+        particleView.burst(cx, cy, color, count)
+    }
+
+    private fun mummySquash() {
+        ivMummy.animate().cancel()
+        ivMummy.scaleX = 0.90f
+        ivMummy.scaleY = 0.94f
+        ivMummy.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(120)
+            .start()
+    }
+
+    private fun spawnFloatingText(text: String, color: String) {
+        val tv = TextView(this).apply {
+            this.text = text
+            setTextColor(Color.parseColor(color))
+            textSize = 22f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val params = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+        flMummy.addView(tv, params)
+        tv.y = flMummy.height / 2f
+        tv.x = (flMummy.width / 2f) - 40 + random.nextInt(80)
+        tv.animate()
+            .translationYBy(-260f)
+            .alpha(0f)
+            .setDuration(900)
+            .withEndAction { flMummy.removeView(tv) }
+            .start()
     }
 
     private fun updateArtifactsTable() {
@@ -392,32 +541,22 @@ class MainActivity : AppCompatActivity() {
             val container = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(16, 12, 16, 12)
-                setBackgroundColor(
-                    if (isOwned) Color.parseColor("#2D1F0F") else Color.parseColor("#1A1108")
-                )
-                val params = LinearLayout.LayoutParams(
+                setBackgroundResource(R.drawable.bg_panel)
+                val p = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = 8 }
-                layoutParams = params
+                layoutParams = p
             }
-
-            val titleRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-
-            val statusIcon = if (isOwned) "✅" else "💀"
-            val nameColor = if (isOwned) "#FFD54F" else "#9E9E9E"
 
             val tvName = TextView(this).apply {
-                text = "$statusIcon ${def.name} (ур. $level)"
-                setTextColor(Color.parseColor(nameColor))
+                val icon = if (isOwned) "✅" else "💀"
+                text = "$icon ${def.name} (ур. $level)"
+                setTextColor(Color.parseColor(if (isOwned) "#FFD54F" else "#9E9E9E"))
                 textSize = 16f
                 typeface = Typeface.DEFAULT_BOLD
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
-            titleRow.addView(tvName)
-            container.addView(titleRow)
+            container.addView(tvName)
 
             val tvDesc = TextView(this).apply {
                 text = def.description
@@ -429,6 +568,7 @@ class MainActivity : AppCompatActivity() {
 
             val actionRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
             }
 
             val tvInfo = TextView(this).apply {
@@ -436,19 +576,18 @@ class MainActivity : AppCompatActivity() {
                 setTextColor(Color.parseColor("#B0BEC5"))
                 textSize = 13f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                gravity = Gravity.CENTER_VERTICAL
             }
             actionRow.addView(tvInfo)
 
             val btnUpgrade = Button(this).apply {
-                text = if (isOwned) "+${format(cost)}" else "Найти"
+                text = if (isOwned) "✨ ${format(cost)}" else "Найти"
                 textSize = 12f
+                setBackgroundResource(R.drawable.btn_gold)
+                setTextColor(Color.parseColor("#3E2B00"))
                 isEnabled = isOwned && coins >= cost
-                setOnClickListener {
-                    if (isOwned) upgradeArtifact(id)
-                }
-                minWidth = 0
+                setOnClickListener { if (isOwned) upgradeArtifact(id) }
                 minimumWidth = 0
+                minWidth = 0
                 setPadding(24, 0, 24, 0)
             }
             actionRow.addView(btnUpgrade)
@@ -468,13 +607,6 @@ class MainActivity : AppCompatActivity() {
             }
             layoutArtifacts.addView(tv)
         }
-    }
-
-    private fun animateTap() {
-        btnTap.animate().cancel()
-        btnTap.scaleX = 0.94f
-        btnTap.scaleY = 0.94f
-        btnTap.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
     }
 
     private fun format(value: Long): String {
