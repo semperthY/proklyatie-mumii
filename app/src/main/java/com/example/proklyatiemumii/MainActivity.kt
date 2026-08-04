@@ -31,7 +31,9 @@ data class ArtifactDef(
     val id: Int,
     val name: String,
     val description: String,
-    val baseBonus: Long
+    val type: String,
+    val value: Double,
+    val baseCost: Long
 )
 
 class MainActivity : AppCompatActivity() {
@@ -80,18 +82,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val artifacts = listOf(
-        ArtifactDef(0, "Песчаная роза", "Редкий цветок пустыни", 5L),
-        ArtifactDef(1, "Скарабей удачи", "Приносит удачу владельцу", 7L),
-        ArtifactDef(2, "Осколок саркофага", "Хранит древнюю силу", 10L),
-        ArtifactDef(3, "Амулет Анубиса", "Защита от проклятий", 12L),
-        ArtifactDef(4, "Золотая маска", "Маска фараона", 15L),
-        ArtifactDef(5, "Камень солнца", "Сияет в темноте гробницы", 20L),
-        ArtifactDef(6, "Посох жреца", "Магический посох", 25L),
-        ArtifactDef(7, "Лунный кристалл", "Хранит лунный свет", 30L),
-        ArtifactDef(8, "Око Гора", "Всевидящее око", 40L),
-        ArtifactDef(9, "Корона фараона", "Символ власти", 50L),
-        ArtifactDef(10, "Сердце пирамиды", "Сердце древней силы", 70L),
-        ArtifactDef(11, "Печать проклятия", "Запечатывает зло", 100L)
+        ArtifactDef(0, "Песчаная роза", "Редкий цветок пустыни", "LUCK", 2.0, 50L),
+        ArtifactDef(1, "Скарабей удачи", "Приносит удачу владельцу", "FIND", 2.0, 70L),
+        ArtifactDef(2, "Осколок саркофага", "Хранит древнюю силу", "TAP", 5.0, 100L),
+        ArtifactDef(3, "Амулет Анубиса", "Защита от проклятий", "SHIELD", 5.0, 120L),
+        ArtifactDef(4, "Золотая маска", "Маска фараона", "GOLD", 10.0, 150L),
+        ArtifactDef(5, "Камень солнца", "Сияет в темноте гробницы", "CRIT", 5.0, 200L),
+        ArtifactDef(6, "Посох жреца", "Магический посох", "AUTO", 50.0, 250L),
+        ArtifactDef(7, "Лунный кристалл", "Хранит лунный свет", "CRITMULT", 0.5, 300L),
+        ArtifactDef(8, "Око Гора", "Всевидящее око", "LUCK", 3.0, 400L),
+        ArtifactDef(9, "Корона фараона", "Символ власти", "GOLD", 15.0, 500L),
+        ArtifactDef(10, "Сердце пирамиды", "Сердце древней силы", "TAP", 15.0, 700L),
+        ArtifactDef(11, "Печать проклятия", "Запечатывает зло", "SHIELD", 10.0, 1000L)
     )
 
     private val goodMessages = arrayOf(
@@ -119,7 +121,7 @@ class MainActivity : AppCompatActivity() {
     private val autoTick = object : Runnable {
         override fun run() {
             if (autoLevel > 0) {
-                coins += autoLevel.toLong()
+                coins += autoIncome()
                 updateUi()
             }
             handler.postDelayed(this, 1000L)
@@ -167,7 +169,7 @@ class MainActivity : AppCompatActivity() {
         updateUi()
         updateArtifactsTable()
 
-        tvLog.text = "Тапай по проклятой мумии и собирай 12 артефактов!"
+        tvLog.text = "Собери все 12 артефактов ОДНОВРЕМЕННО!"
     }
 
     override fun onResume() {
@@ -241,7 +243,7 @@ class MainActivity : AppCompatActivity() {
                 val lostId = loseRandomArtifact()
                 val baseMsg = badMessages[random.nextInt(badMessages.size)].format(format(penalty))
                 tvLog.text = if (lostId != null) {
-                    "$baseMsg\n💀 Потерян артефакт: ${artifacts[lostId].name}!"
+                    "$baseMsg\n💀 Потерян артефакт: ${artifacts[lostId].name}! Он ещё вернётся..."
                 } else {
                     baseMsg
                 }
@@ -250,10 +252,11 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             var gain = tapPower()
-            gain = applyCombo(gain)
+            gain = (gain * goldMultiplier()).roundToLong()
+            gain = (gain * comboMultiplier()).roundToLong()
 
             val isCrit = random.nextDouble() < critChance()
-            if (isCrit) gain *= 5L
+            if (isCrit) gain = (gain * critMultiplier()).roundToLong()
 
             coins += gain
 
@@ -280,28 +283,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tryFindArtifact(): Int? {
-        val chance = artifactFindChance()
-        if (random.nextDouble() >= chance) return null
+        if (random.nextDouble() >= artifactFindChance()) return null
 
-        val unfound = artifacts.filter { !artifactsCollected.contains(it.id) }
-        if (unfound.isNotEmpty()) {
-            val artifact = unfound[random.nextInt(unfound.size)]
-            artifactsCollected.add(artifact.id)
-            artifactsOwned.add(artifact.id)
-            artifactLevels[artifact.id] = 1
-            return artifact.id
-        }
+        val pool = artifacts.filter { !artifactsOwned.contains(it.id) }
+        if (pool.isEmpty()) return null
 
-        val lost = artifacts.filter {
-            artifactsCollected.contains(it.id) && !artifactsOwned.contains(it.id)
+        val a = pool[random.nextInt(pool.size)]
+        if (!artifactsCollected.contains(a.id)) {
+            artifactsCollected.add(a.id)
+            artifactLevels[a.id] = 1
         }
-        if (lost.isNotEmpty()) {
-            val artifact = lost[random.nextInt(lost.size)]
-            artifactsOwned.add(artifact.id)
-            return artifact.id
-        }
-
-        return null
+        artifactsOwned.add(a.id)
+        return a.id
     }
 
     private fun loseRandomArtifact(): Int? {
@@ -312,28 +305,57 @@ class MainActivity : AppCompatActivity() {
         return lost
     }
 
+    private fun sumOwned(type: String): Double {
+        var s = 0.0
+        for (a in artifacts) {
+            if (a.type == type && artifactsOwned.contains(a.id)) {
+                s += a.value * (artifactLevels[a.id] ?: 1)
+            }
+        }
+        return s
+    }
+
+    private fun tapPower(): Long {
+        return 1L + tapLevel + sumOwned("TAP").roundToLong()
+    }
+
+    private fun badChance(): Double {
+        return max(0.02, 0.25 - 0.01 * luckLevel - sumOwned("LUCK") / 100.0)
+    }
+
+    private fun critChance(): Double {
+        return min(0.85, 0.05 + 0.015 * luckLevel + sumOwned("CRIT") / 100.0)
+    }
+
+    private fun critMultiplier(): Double {
+        return 5.0 + sumOwned("CRITMULT")
+    }
+
     private fun artifactFindChance(): Double {
-        return min(0.40, 0.08 + 0.01 * luckLevel)
+        return min(0.50, 0.08 + 0.01 * luckLevel + sumOwned("FIND") / 100.0)
+    }
+
+    private fun goldMultiplier(): Double {
+        return 1.0 + sumOwned("GOLD") / 100.0
+    }
+
+    private fun autoBonus(): Double {
+        return 1.0 + sumOwned("AUTO") / 100.0
+    }
+
+    private fun comboMultiplier(): Double {
+        return max(1.0, artifactsOwned.size.toDouble())
+    }
+
+    private fun autoIncome(): Long {
+        return (autoLevel * autoBonus() * goldMultiplier()).roundToLong()
     }
 
     private fun calculatePenalty(): Long {
         if (coins <= 0) return 0L
-        val percent = 0.10 + 0.05 * artifactsOwned.size
-        val penalty = (coins * percent).roundToLong()
-        return max(1L, penalty)
-    }
-
-    private fun tapPower(): Long {
-        var power = 1L + tapLevel
-        for ((_, lvl) in artifactLevels) {
-            power += lvl
-        }
-        return power
-    }
-
-    private fun applyCombo(gain: Long): Long {
-        val multiplier = 1.0 + 0.10 * artifactsOwned.size
-        return (gain * multiplier).roundToLong()
+        val shield = sumOwned("SHIELD") / 100.0
+        val percent = max(0.05, 0.10 + 0.05 * artifactsOwned.size - shield)
+        return max(1L, (coins * percent).roundToLong())
     }
 
     private fun buyTapUpgrade() {
@@ -385,25 +407,13 @@ class MainActivity : AppCompatActivity() {
             coins -= cost
             artifactLevels[id] = (artifactLevels[id] ?: 0) + 1
             sound.play("artifact")
-            tvLog.text = "✨ Артефакт ${artifacts[id].name} улучшен до ур. ${artifactLevels[id]}!"
+            tvLog.text = "✨ ${artifacts[id].name} улучшен до ур. ${artifactLevels[id]}!"
         } else {
             tvLog.text = "Не хватает монет на улучшение артефакта."
         }
         saveProgress()
         updateUi()
         updateArtifactsTable()
-    }
-
-    private fun badChance(): Double {
-        return max(0.02, 0.25 - 0.01 * luckLevel)
-    }
-
-    private fun critChance(): Double {
-        return min(0.60, 0.05 + 0.015 * luckLevel)
-    }
-
-    private fun autoIncomePerSecond(): Long {
-        return autoLevel.toLong()
     }
 
     private fun tapCost(): Long {
@@ -419,22 +429,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun artifactUpgradeCost(id: Int): Long {
-        val base = artifacts[id].baseBonus * 10
-        val lvl = artifactLevels[id] ?: 0
-        return (base * 1.5.pow(lvl.toDouble())).toLong()
+        return (artifacts[id].baseCost * 1.5.pow((artifactLevels[id] ?: 0).toDouble())).toLong()
     }
 
     private fun updateUi() {
         tvCoins.text = format(coins)
 
-        val comboPercent = artifactsOwned.size * 10
-        val penaltyBonus = artifactsOwned.size * 5
-
-        val stats = "За тап: ${format(tapPower())} | " +
-                "Крит: ${formatPercent(critChance())} | " +
-                "Неудача: ${formatPercent(badChance())}\n" +
-                "Авто: ${format(autoIncomePerSecond())}/сек | " +
-                "Комбо: +${comboPercent}% | Проклятие: +${penaltyBonus}%"
+        val stats = "За тап: ${format(tapPower())} | Крит: ${formatPercent(critChance())} " +
+                "(x${fmt1(critMultiplier())}) | Неудача: ${formatPercent(badChance())}\n" +
+                "Авто: ${format(autoIncome())}/сек | Комбо: x${artifactsOwned.size.coerceAtLeast(1)} | " +
+                "Монеты: +${formatPercent(sumOwned("GOLD"))}"
 
         tvStats.text = stats
 
@@ -443,12 +447,27 @@ class MainActivity : AppCompatActivity() {
         val luckCost = luckCost()
 
         btnUpgradeTap.text = " Улучшить тап (ур. $tapLevel) — ${format(tapCost)}"
-        btnUpgradeAuto.text = "🐈⬛ Нанять кота (ур. $autoLevel) — ${format(autoCost)}"
+        btnUpgradeAuto.text = "🐈 Нанять кота (ур. $autoLevel) — ${format(autoCost)}"
         btnUpgradeLuck.text = "🏺 Амулет удачи (ур. $luckLevel) — ${format(luckCost)}"
 
         btnUpgradeTap.isEnabled = coins >= tapCost
         btnUpgradeAuto.isEnabled = coins >= autoCost
         btnUpgradeLuck.isEnabled = coins >= luckCost
+    }
+
+    private fun passiveValueText(def: ArtifactDef, level: Int): String {
+        val v = def.value * level
+        return when (def.type) {
+            "TAP" -> "+${v.roundToLong()} к тапу"
+            "CRITMULT" -> "+${fmt1(v)}x к силе крита"
+            "LUCK" -> "+${fmt1(v)}% удачи"
+            "FIND" -> "+${fmt1(v)}% к поиску артефактов"
+            "SHIELD" -> "+${fmt1(v)}% защиты от потерь"
+            "GOLD" -> "+${fmt1(v)}% к монетам"
+            "CRIT" -> "+${fmt1(v)}% к шансу крита"
+            "AUTO" -> "+${fmt1(v)}% к автодоходу"
+            else -> ""
+        }
     }
 
     private fun setEffects(on: Boolean) {
@@ -517,7 +536,8 @@ class MainActivity : AppCompatActivity() {
 
         val foundCount = artifactsCollected.size
         val ownedCount = artifactsOwned.size
-        tvArtifactStats.text = "Найдено: $foundCount / 12 | На руках: $ownedCount"
+        tvArtifactStats.text =
+            "На руках: $ownedCount / 12 | Комбо: x${ownedCount.coerceAtLeast(1)} | Найдено всего: $foundCount"
 
         if (artifactsCollected.isEmpty()) {
             val tv = TextView(this).apply {
@@ -552,7 +572,7 @@ class MainActivity : AppCompatActivity() {
             val tvName = TextView(this).apply {
                 val icon = if (isOwned) "✅" else "💀"
                 text = "$icon ${def.name} (ур. $level)"
-                setTextColor(Color.parseColor(if (isOwned) "#FFD54F" else "#9E9E9E"))
+                setTextColor(Color.parseColor(if (isOwned) "#FFD54F" else "#B0BEC5"))
                 textSize = 16f
                 typeface = Typeface.DEFAULT_BOLD
             }
@@ -572,15 +592,15 @@ class MainActivity : AppCompatActivity() {
             }
 
             val tvInfo = TextView(this).apply {
-                text = if (isOwned) "Даёт +$level к тапу" else "Потерян"
-                setTextColor(Color.parseColor("#B0BEC5"))
+                text = if (isOwned) passiveValueText(def, level) else "Потерян — выпадет снова"
+                setTextColor(Color.parseColor(if (isOwned) "#A5D6A7" else "#90A4AE"))
                 textSize = 13f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
             actionRow.addView(tvInfo)
 
             val btnUpgrade = Button(this).apply {
-                text = if (isOwned) "✨ ${format(cost)}" else "Найти"
+                text = if (isOwned) "✨ ${format(cost)}" else "Ждём..."
                 textSize = 12f
                 setBackgroundResource(R.drawable.btn_gold)
                 setTextColor(Color.parseColor("#3E2B00"))
@@ -596,9 +616,9 @@ class MainActivity : AppCompatActivity() {
             layoutArtifacts.addView(container)
         }
 
-        if (foundCount == 12 && ownedCount == 12) {
+        if (ownedCount == 12) {
             val tv = TextView(this).apply {
-                text = "🏆 ВСЕ 12 АРТЕФАКТОВ СОБРАНЫ! ПРОКЛЯТИЕ СНЯТО!"
+                text = "🏆 ВСЕ 12 АРТЕФАКТОВ ОДНОВРЕМЕННО! ПРОКЛЯТИЕ СНЯТО!"
                 setTextColor(Color.parseColor("#FFEB3B"))
                 textSize = 14f
                 typeface = Typeface.DEFAULT_BOLD
@@ -607,6 +627,10 @@ class MainActivity : AppCompatActivity() {
             }
             layoutArtifacts.addView(tv)
         }
+    }
+
+    private fun fmt1(v: Double): String {
+        return String.format(Locale.getDefault(), "%.1f", v)
     }
 
     private fun format(value: Long): String {
