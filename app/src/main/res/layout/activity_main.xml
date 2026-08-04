@@ -8,9 +8,61 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#CC0D0805"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/tvHeadCoins"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="💰 0"
+            android:textColor="#FFD54F"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvHeadClicks"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="👆 0"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvHeadArts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🏺 0/12"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnRebirth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌀"
+            android:textSize="20sp"
+            android:visibility="gone"
+            android:padding="4dp" />
+
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingTop="48dp"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
@@ -19,42 +71,6 @@
             android:orientation="vertical"
             android:gravity="center_horizontal"
             android:padding="20dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ПРОКЛЯТИЕ МУМИИ"
-                android:textColor="#FFD54F"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:shadowColor="#80000000"
-                android:shadowDx="2" android:shadowDy="2" android:shadowRadius="4"
-                android:layout_marginBottom="12dp" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
-
-                <ImageView
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:src="@drawable/sprite_coin"
-                    android:layout_marginEnd="8dp"
-                    android:contentDescription="Монеты" />
-
-                <TextView
-                    android:id="@+id/tvCoins"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvStats"
@@ -68,16 +84,72 @@
             <FrameLayout
                 android:id="@+id/flMummy"
                 android:layout_width="match_parent"
-                android:layout_height="240dp"
+                android:layout_height="280dp"
                 android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start|center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView android:id="@+id/tvSkill0" style="@style/Widget.AppCompat.Button"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                    <TextView android:id="@+id/tvSkill1"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                    <TextView android:id="@+id/tvSkill2"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                </LinearLayout>
 
                 <ImageView
                     android:id="@+id/ivMummy"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
+                    android:layout_width="190dp"
+                    android:layout_height="190dp"
                     android:layout_gravity="center"
                     android:src="@drawable/sprite_mummy"
                     android:contentDescription="Мумия" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|center_vertical"
+                    android:orientation="vertical">
+
+                    <TextView android:id="@+id/tvSkill3"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                    <TextView android:id="@+id/tvSkill4"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                    <TextView android:id="@+id/tvSkill5"
+                        android:layout_width="52dp" android:layout_height="52dp"
+                        android:layout_margin="4dp" android:gravity="center"
+                        android:textSize="20sp" android:background="@drawable/bg_panel" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvMana"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:text="🔮 0/100"
+                    android:textColor="#80DEEA"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
             </FrameLayout>
 
@@ -172,9 +244,61 @@
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:layout_gravity="top|end"
-        android:layout_margin="12dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="12dp"
         android:padding="6dp"
         android:src="@drawable/ic_sound_on"
         android:contentDescription="Звук" />
+
+    <LinearLayout
+        android:id="@+id/layoutRebirth"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E6120A05"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌀 ПЕРЕРОЖДЕНИЕ"
+            android:textColor="#FFEB3B"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvRebirthText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnRebirthYes"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="ПЕРЕРОДИТЬСЯ"
+            android:textStyle="bold"
+            android:textColor="#3E2B00"
+            android:background="@drawable/btn_gold"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnRebirthNo"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="ПОЗЖЕ"
+            android:textStyle="bold"
+            android:textColor="#FFCC80"
+            android:background="@drawable/btn_dark" />
+
+    </LinearLayout>
 
 </FrameLayout>
