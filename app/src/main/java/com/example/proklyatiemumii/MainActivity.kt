@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             spawnPickup()
             val base = 20000L + (random.nextDouble() * 25000).toLong()
             val mult = if (pk(10)) 0.5 else 1.0
-            handler.postDelayed(this, (base * mult))
+            handler.postDelayed(this, (base * mult).toLong())
         }
     }
 
